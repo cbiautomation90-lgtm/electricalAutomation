@@ -1,5 +1,4 @@
-import { createSafetyIncident } from './actions';
-import { updateIncidentInvestigation } from './investigation-actions';
+import { createSafetyIncident, updateIncidentInvestigation } from './actions';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function SafetyPage({ searchParams }: { searchParams: { saved?: string; error?: string; updated?: string } }) {

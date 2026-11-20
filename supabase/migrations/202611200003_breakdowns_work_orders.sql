@@ -137,7 +137,7 @@ create policy "engineers manage work orders" on public.work_orders for all using
 );
 create policy "assigned technicians update work orders" on public.work_orders for update using (
   public.has_role('technician') and exists (
-    select 1 from public.work_assignments wa where wa.work_order_id = id and wa.assignee_id = auth.uid() and wa.unassigned_at is null
+    select 1 from public.work_assignments wa where wa.work_order_id = work_orders.id and wa.assignee_id = auth.uid() and wa.unassigned_at is null
   )
 ) with check (public.has_role('technician'));
 

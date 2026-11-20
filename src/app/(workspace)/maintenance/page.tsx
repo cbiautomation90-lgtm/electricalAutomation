@@ -1,0 +1,2 @@
+import PlannedModule from '../planned-module';
+export default function MaintenancePage(){ return <PlannedModule title="Maintenance management" description="Breakdown response, corrective work, preventive schedules, and maintenance approvals." capabilities={['Breakdown reporting and unique work order references','Work assignment, diagnosis, repair, testing, and closure approval','Preventive maintenance plans and schedules','Downtime, labour, and materials history']} />; }

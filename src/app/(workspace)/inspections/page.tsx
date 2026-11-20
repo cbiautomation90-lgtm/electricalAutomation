@@ -1,0 +1,2 @@
+import PlannedModule from '../planned-module';
+export default function InspectionsPage(){ return <PlannedModule title="Inspections & test equipment" description="Plan electrical and automation inspections, track findings, and manage calibrated inspection tools." capabilities={['Inspection templates and checklists','Inspection tool register with calibration due dates','Findings, photos, risk ranking, and assigned corrective actions','Inspection history and approval records']} />; }

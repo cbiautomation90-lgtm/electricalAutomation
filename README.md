@@ -1,5 +1,17 @@
 # EAM Manager
 
-Electrical & Automation Department Management System.
+Electrical & Automation Department Management System for industrial operations.
 
-This repository is being implemented in phases for deployment on Vercel with Supabase PostgreSQL, authentication, and storage.
+## Technology
+
+- Next.js and React
+- TypeScript
+- Tailwind CSS
+- Supabase PostgreSQL and Authentication
+- Supabase Storage
+- Recharts
+- PWA support
+
+## Development status
+
+Phase 1 foundation is being implemented.

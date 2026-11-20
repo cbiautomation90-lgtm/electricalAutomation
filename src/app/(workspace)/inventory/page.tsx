@@ -1,16 +1,12 @@
-import PlannedModule from '../planned-module';
+import { createClient } from '@/lib/supabase/server';
+import { createInventoryItem } from './actions';
 
-export default function InventoryPage() {
-  return (
-    <PlannedModule
-      title="Inventory & spares"
-      description="Control spare parts and consumables used by electrical and automation maintenance."
-      capabilities={[
-        'Part register and storage locations',
-        'Receipt, issue, return, and adjustment transactions',
-        'Work-order-linked parts usage',
-        'Reorder levels and low-stock visibility',
-      ]}
-    />
-  );
+export default async function InventoryPage({ searchParams }: { searchParams: { saved?: string; error?: string } }) {
+  const supabase = await createClient();
+  const { data: items, error } = await supabase.from('inventory_items').select('id,item_number,name,category,unit,quantity_on_hand,reorder_level,location').eq('active', true).order('name').limit(200);
+  return <section className="space-y-6"><header><p className="text-sm font-medium text-industrial-700">Stores</p><h1 className="mt-1 text-3xl font-semibold">Inventory & spares</h1><p className="mt-2 text-slate-600">Register spare parts and track on-hand quantities against reorder thresholds.</p></header>
+    {searchParams.saved && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Inventory item saved.</p>}{(searchParams.error || error) && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Could not save or load inventory. Check the migration, required fields, and access policies.</p>}
+    <form action={createInventoryItem} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 md:grid-cols-3"><h2 className="text-lg font-semibold md:col-span-3">Add inventory item</h2><label className="grid gap-1 text-sm">Item number<input name="item_number" required maxLength={40} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Name<input name="name" required minLength={2} maxLength={160} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Category<input name="category" maxLength={100} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Unit<input name="unit" defaultValue="each" required className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Quantity on hand<input name="quantity_on_hand" type="number" min="0" step="0.001" defaultValue="0" required className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Reorder level<input name="reorder_level" type="number" min="0" step="0.001" defaultValue="0" required className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Storage location<input name="location" maxLength={160} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm md:col-span-2">Description<textarea name="description" maxLength={1000} rows={2} className="rounded-lg border p-2" /></label><button className="w-fit rounded-lg bg-industrial-700 px-4 py-2 font-medium text-white">Save item</button></form>
+    {!error && <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><h2 className="p-5 text-lg font-semibold">Stock register</h2><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-3">Item</th><th className="p-3">Category</th><th className="p-3">On hand</th><th className="p-3">Reorder at</th><th className="p-3">Location</th></tr></thead><tbody>{items?.map((item) => <tr key={item.id} className="border-t"><td className="p-3"><strong>{item.item_number}</strong><br />{item.name}</td><td className="p-3">{item.category || '—'}</td><td className="p-3">{item.quantity_on_hand} {item.unit}</td><td className="p-3">{item.reorder_level}</td><td className="p-3">{item.location || '—'}</td></tr>)}</tbody></table>{!items?.length && <p className="p-5 text-sm text-slate-500">No active inventory items yet.</p>}</div>}
+  </section>;
 }

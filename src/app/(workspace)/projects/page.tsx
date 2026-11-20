@@ -1,16 +1,12 @@
-import PlannedModule from '../planned-module';
+import { createProject } from './actions';
+import { createClient } from '@/lib/supabase/server';
 
-export default function ProjectsPage() {
-  return (
-    <PlannedModule
-      title="Projects"
-      description="Manage electrical and automation projects from planning through completion."
-      capabilities={[
-        'Project portfolio and milestones',
-        'Assigned project tasks and due dates',
-        'Budget and target-date tracking',
-        'Project status and completion reporting',
-      ]}
-    />
-  );
+export default async function ProjectsPage({ searchParams }: { searchParams: { saved?: string; error?: string } }) {
+  const supabase = await createClient();
+  const { data: projects, error } = await supabase.from('projects').select('id,project_number,name,status,priority,start_date,target_date,budget').order('created_at', { ascending: false }).limit(100);
+  return <section className="space-y-6"><header><p className="text-sm font-medium text-industrial-700">Project delivery</p><h1 className="mt-1 text-3xl font-semibold">Projects</h1><p className="mt-2 text-slate-600">Register and monitor electrical and automation projects.</p></header>
+    {searchParams.saved && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Project saved.</p>}{(searchParams.error || error) && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Could not save or load projects. Check project number, dates, and permissions.</p>}
+    <form action={createProject} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 md:grid-cols-3"><h2 className="text-lg font-semibold md:col-span-3">Create project</h2><label className="grid gap-1 text-sm">Project number<input name="project_number" required maxLength={40} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm md:col-span-2">Project name<input name="name" required minLength={2} maxLength={180} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Priority<select name="priority" className="rounded-lg border p-2"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label><label className="grid gap-1 text-sm">Start date<input name="start_date" type="date" className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Target date<input name="target_date" type="date" className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Budget<input name="budget" type="number" min="0" step="0.01" className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm md:col-span-3">Description<textarea name="description" maxLength={2000} rows={2} className="rounded-lg border p-2" /></label><button className="w-fit rounded-lg bg-industrial-700 px-4 py-2 font-medium text-white">Save project</button></form>
+    {!error && <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><h2 className="p-5 text-lg font-semibold">Project register</h2><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-3">Project</th><th className="p-3">Status</th><th className="p-3">Priority</th><th className="p-3">Dates</th><th className="p-3">Budget</th></tr></thead><tbody>{projects?.map((project) => <tr key={project.id} className="border-t"><td className="p-3"><strong>{project.project_number}</strong><br />{project.name}</td><td className="p-3">{project.status}</td><td className="p-3">{project.priority}</td><td className="p-3">{project.start_date || '—'} → {project.target_date || '—'}</td><td className="p-3">{project.budget ?? '—'}</td></tr>)}</tbody></table>{!projects?.length && <p className="p-5 text-sm text-slate-500">No projects registered yet.</p>}</div>}
+  </section>;
 }

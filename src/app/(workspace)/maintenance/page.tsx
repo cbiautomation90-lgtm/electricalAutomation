@@ -1,16 +1,15 @@
-import PlannedModule from '../planned-module';
+import { createClient } from '@/lib/supabase/server';
+import { createMaintenancePlan } from './actions';
 
-export default function MaintenancePage() {
-  return (
-    <PlannedModule
-      title="Maintenance management"
-      description="Plan preventive work and progress breakdown repairs through the maintenance lifecycle."
-      capabilities={[
-        'Asset preventive-maintenance schedules',
-        'Due and overdue PM task visibility',
-        'Automatic linkage to corrective work orders',
-        'Maintenance completion notes and approval status',
-      ]}
-    />
-  );
+export default async function MaintenancePage({ searchParams }: { searchParams: { saved?: string; error?: string } }) {
+  const supabase = await createClient();
+  const [{ data: assets }, { data: plans }] = await Promise.all([
+    supabase.from('assets').select('id,tag,description').is('archived_at', null).order('tag').limit(200),
+    supabase.from('preventive_maintenance_plans').select('id,title,interval_days,next_due_at,assets(tag)').order('next_due_at').limit(100),
+  ]);
+  return <section className="space-y-6"><header><p className="text-sm font-medium text-industrial-700">Planned maintenance</p><h1 className="mt-1 text-3xl font-semibold">Maintenance</h1><p className="mt-2 text-slate-600">Create recurring maintenance plans and review upcoming due dates.</p></header>
+    {searchParams.saved && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Maintenance plan saved.</p>}{searchParams.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Could not save the plan. Check required fields and permissions.</p>}
+    <form action={createMaintenancePlan} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 md:grid-cols-2"><h2 className="text-lg font-semibold md:col-span-2">Create preventive plan</h2><label className="grid gap-1 text-sm">Asset<select name="asset_id" required className="rounded-lg border p-2"><option value="">Select asset</option>{assets?.map((a) => <option key={a.id} value={a.id}>{a.tag} — {a.description}</option>)}</select></label><label className="grid gap-1 text-sm">Plan title<input name="title" required minLength={3} maxLength={180} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Interval (days)<input name="interval_days" type="number" min="1" required className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Next due date<input name="next_due_at" type="date" required className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Estimated duration (minutes)<input name="estimated_duration_minutes" type="number" min="1" className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm md:col-span-2">Description<textarea name="description" rows={2} className="rounded-lg border p-2" /></label><button className="w-fit rounded-lg bg-industrial-700 px-4 py-2 font-medium text-white">Save plan</button></form>
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><h2 className="p-5 text-lg font-semibold">Preventive plans</h2><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-3">Plan</th><th className="p-3">Asset</th><th className="p-3">Interval</th><th className="p-3">Next due</th></tr></thead><tbody>{plans?.map((p: any) => <tr key={p.id} className="border-t"><td className="p-3">{p.title}</td><td className="p-3">{p.assets?.tag ?? 'Asset'}</td><td className="p-3">{p.interval_days} days</td><td className="p-3">{p.next_due_at}</td></tr>)}</tbody></table>{!plans?.length && <p className="p-5 text-sm text-slate-500">No preventive plans yet.</p>}</div>
+  </section>;
 }

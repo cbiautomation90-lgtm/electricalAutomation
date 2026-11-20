@@ -1,16 +1,12 @@
-import PlannedModule from '../planned-module';
+import { createSafetyIncident } from './actions';
+import { createClient } from '@/lib/supabase/server';
 
-export default function SafetyPage() {
-  return (
-    <PlannedModule
-      title="Safety & incidents"
-      description="Report incidents and track investigations and corrective actions."
-      capabilities={[
-        'Near-miss and incident reporting',
-        'Severity and investigation workflow',
-        'Immediate and corrective actions',
-        'Incident closure evidence',
-      ]}
-    />
-  );
+export default async function SafetyPage({ searchParams }: { searchParams: { saved?: string; error?: string } }) {
+  const supabase = await createClient();
+  const { data: incidents, error } = await supabase.from('safety_incidents').select('id,reference_number,severity,status,reported_at,location,description').order('reported_at', { ascending: false }).limit(100);
+  return <section className="space-y-6"><header><p className="text-sm font-medium text-industrial-700">Safety management</p><h1 className="mt-1 text-3xl font-semibold">Safety & incidents</h1><p className="mt-2 text-slate-600">Report near misses and incidents for investigation and follow-up.</p></header>
+    {searchParams.saved && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Incident reported.</p>}{(searchParams.error || error) && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Could not save or load safety incidents. Check the reference number and permissions.</p>}
+    <form action={createSafetyIncident} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 md:grid-cols-2"><h2 className="text-lg font-semibold md:col-span-2">Report incident or near miss</h2><label className="grid gap-1 text-sm">Reference number<input name="reference_number" required maxLength={40} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Severity<select name="severity" className="rounded-lg border p-2"><option value="near_miss">Near miss</option><option value="minor">Minor</option><option value="moderate">Moderate</option><option value="major">Major</option><option value="critical">Critical</option></select></label><label className="grid gap-1 text-sm">Incident date/time<input name="incident_at" type="datetime-local" className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm">Location<input name="location" maxLength={160} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm md:col-span-2">Description<textarea name="description" required minLength={5} maxLength={4000} rows={3} className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm md:col-span-2">Immediate action<textarea name="immediate_action" maxLength={2000} rows={2} className="rounded-lg border p-2" /></label><button className="w-fit rounded-lg bg-industrial-700 px-4 py-2 font-medium text-white">Submit report</button></form>
+    {!error && <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><h2 className="p-5 text-lg font-semibold">Recent incidents</h2><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-3">Reference</th><th className="p-3">Date</th><th className="p-3">Severity</th><th className="p-3">Status</th><th className="p-3">Location / description</th></tr></thead><tbody>{incidents?.map((incident) => <tr key={incident.id} className="border-t"><td className="p-3">{incident.reference_number}</td><td className="p-3">{new Date(incident.reported_at).toLocaleDateString()}</td><td className="p-3">{incident.severity.replace('_', ' ')}</td><td className="p-3">{incident.status}</td><td className="p-3">{incident.location || '—'} · {incident.description}</td></tr>)}</tbody></table>{!incidents?.length && <p className="p-5 text-sm text-slate-500">No incidents reported yet.</p>}</div>}
+  </section>;
 }

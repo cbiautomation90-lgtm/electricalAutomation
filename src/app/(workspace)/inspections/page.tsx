@@ -1,2 +1,17 @@
+import Link from 'next/link';
 import PlannedModule from '../planned-module';
-export default function InspectionsPage(){ return <PlannedModule title="Inspections & test equipment" description="Plan electrical and automation inspections, track findings, and manage calibrated inspection tools." capabilities={['Inspection templates and checklists','Inspection tool register with calibration due dates','Findings, photos, risk ranking, and assigned corrective actions','Inspection history and approval records']} />; }
+
+export default async function InspectionsPage() {
+  return (
+    <PlannedModule
+      title="Inspections & test equipment"
+      description="Inspect assets, record findings, and manage test-equipment calibration status."
+      capabilities={[
+        'Reusable electrical and automation inspection templates',
+        'Asset-linked inspection history and follow-up findings',
+        'Calibration register with due and overdue status',
+        'Links to corrective work orders',
+      ]}
+    />
+  );
+}

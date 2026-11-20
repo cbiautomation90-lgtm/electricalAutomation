@@ -1,2 +1,16 @@
 import PlannedModule from '../planned-module';
-export default function KpisPage(){ return <PlannedModule title="KPIs & manuals" description="Manage KPI definitions and controlled engineering documents with revision and approval history." capabilities={['Configurable KPI definitions, owners, targets, and calculation methods','Reports calculated from actual maintenance and inspection records','Controlled manuals, procedures, and engineering standards','Revision history, review dates, and approval workflow']} />; }
+
+export default function KpisPage() {
+  return (
+    <PlannedModule
+      title="KPI & control"
+      description="Review operational performance and enter controlled manual KPI measurements."
+      capabilities={[
+        'Manual KPI entries by reporting period',
+        'Targets and period-over-period variance',
+        'Maintenance reliability and downtime views',
+        'Export-ready management reporting',
+      ]}
+    />
+  );
+}

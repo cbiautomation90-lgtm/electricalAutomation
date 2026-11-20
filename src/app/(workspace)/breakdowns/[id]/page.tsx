@@ -1,0 +1,14 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+
+export default async function BreakdownDetailPage({params,searchParams}:{params:{id:string};searchParams:{reported?:string}}){
+ const supabase=await createClient();
+ const {data:report,error}=await supabase.from('breakdown_reports').select('*, assets(tag,description,area_id)').eq('id',params.id).single();
+ if(error||!report)notFound();
+ const {data:order}=await supabase.from('work_orders').select('id,reference_number,status,priority').eq('breakdown_id',report.id).maybeSingle();
+ return <div className="mx-auto max-w-4xl space-y-6"><div><Link href="/breakdowns" className="text-sm text-industrial-700">← Breakdown reports</Link><p className="mt-3 text-sm font-medium text-red-700">{report.reference_number}</p><h1 className="mt-1 text-2xl font-bold">Breakdown report</h1>{searchParams.reported&&<p className="mt-3 rounded bg-emerald-50 p-3 text-sm text-emerald-800">Report submitted. Generated reference: {searchParams.reported}</p>}</div>
+ <section className="grid gap-4 rounded-xl border bg-white p-5 sm:grid-cols-2"><Detail label="Equipment" value={`${(report.assets as {tag?:string}|null)?.tag??''} — ${(report.assets as {description?:string}|null)?.description??''}`}/><Detail label="Priority" value={report.priority}/><Detail label="Reported" value={new Date(report.reported_at).toLocaleString()}/><Detail label="Failure time" value={report.failure_at?new Date(report.failure_at).toLocaleString():'—'}/><Detail label="Category" value={report.fault_category??'—'}/><Detail label="Safety impact" value={report.safety_impact?'Yes — follow site safety escalation':'No known impact'}/><div className="sm:col-span-2"><Detail label="Fault description" value={report.fault_description}/></div><div className="sm:col-span-2"><Detail label="Initial observations" value={report.initial_observations??'—'}/></div></section>
+ <section className="rounded-xl border bg-white p-5"><h2 className="font-semibold">Corrective work order</h2>{order?<div className="mt-3 flex flex-wrap items-center justify-between gap-3"><div><p className="font-medium text-industrial-700">{order.reference_number}</p><p className="mt-1 text-sm capitalize text-slate-600">{order.status.replaceAll('_',' ')} · {order.priority}</p></div><Link href={`/work-orders/${order.id}`} className="rounded-lg bg-industrial-900 px-4 py-2 text-sm font-medium text-white">Open work order</Link></div>:<p className="mt-2 text-sm text-red-700">Work order generation needs investigation. Contact an administrator.</p>}</section></div>;
+}
+function Detail({label,value}:{label:string;value:string}){return <div><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 whitespace-pre-wrap text-sm font-medium">{value}</p></div>}

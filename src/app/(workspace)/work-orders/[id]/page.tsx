@@ -1,0 +1,18 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { updateWorkOrderStatus } from '@/app/(workspace)/breakdowns/actions';
+
+const nextStatus: Record<string,string> = { open:'assigned', assigned:'in_progress', in_progress:'repair_completed', repair_completed:'tested', tested:'verified', verified:'closed' };
+export default async function WorkOrderDetailPage({params,searchParams}:{params:{id:string};searchParams:{error?:string;updated?:string}}){
+ const supabase=await createClient();
+ const {data:order,error}=await supabase.from('work_orders').select('*,assets(tag,description)').eq('id',params.id).single();
+ if(error||!order)notFound();
+ const {data:events}=await supabase.from('work_order_events').select('id,event_type,details,created_at').eq('work_order_id',order.id).order('created_at',{ascending:false});
+ const next=nextStatus[order.status];
+ return <div className="mx-auto max-w-4xl space-y-6"><div><Link href="/work-orders" className="text-sm text-industrial-700">← Work orders</Link><p className="mt-3 text-sm font-medium text-industrial-700">{order.reference_number}</p><h1 className="mt-1 text-2xl font-bold">{order.title}</h1></div>{searchParams.error&&<p role="alert" className="rounded bg-amber-50 p-3 text-sm text-amber-900">Status update was rejected. Verify assigned role and valid workflow transition.</p>}{searchParams.updated&&<p className="rounded bg-emerald-50 p-3 text-sm text-emerald-800">Work order updated.</p>}
+ <section className="grid gap-4 rounded-xl border bg-white p-5 sm:grid-cols-2"><Detail label="Equipment" value={`${(order.assets as {tag?:string}|null)?.tag??'—'} · ${(order.assets as {description?:string}|null)?.description??''}`}/><Detail label="Status" value={order.status.replaceAll('_',' ')}/><Detail label="Priority" value={order.priority}/><Detail label="Reported" value={new Date(order.reported_at).toLocaleString()}/><Detail label="Fault / job description" value={order.description}/><Detail label="Root cause" value={order.root_cause??'Not recorded'}/><Detail label="Corrective action" value={order.corrective_action??'Not recorded'}/><Detail label="Verification" value={order.verification_results??'Not recorded'}/></section>
+ {next&&<form action={updateWorkOrderStatus} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-5"><input type="hidden" name="work_order_id" value={order.id}/><div><h2 className="font-semibold">Workflow action</h2><p className="mt-1 text-sm text-slate-500">Advance work order to <span className="font-medium capitalize">{next.replaceAll('_',' ')}</span>. Technician assignment and supervisor approval are additional workflow work pending.</p></div><input type="hidden" name="status" value={next}/><button className="rounded-lg bg-industrial-900 px-4 py-2.5 text-sm font-semibold text-white">Advance status</button></form>}
+ <section className="rounded-xl border bg-white p-5"><h2 className="font-semibold">Work history</h2>{events?.length?<ul className="mt-3 divide-y">{events.map(e=><li key={e.id} className="flex justify-between gap-3 py-3 text-sm"><span>{e.event_type.replaceAll('_',' ')}</span><time className="text-slate-500">{new Date(e.created_at).toLocaleString()}</time></li>)}</ul>:<p className="mt-2 text-sm text-slate-500">No work order events recorded.</p>}</section></div>;
+}
+function Detail({label,value}:{label:string;value:string}){return <div><p className="text-xs uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 whitespace-pre-wrap text-sm font-medium capitalize">{value}</p></div>}

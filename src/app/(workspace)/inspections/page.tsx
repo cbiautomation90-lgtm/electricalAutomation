@@ -1,0 +1,15 @@
+import { createClient } from '@/lib/supabase/server';
+import { createInspectionRecord } from './actions';
+
+export default async function InspectionsPage({ searchParams }: { searchParams: { saved?: string; error?: string } }) {
+  const supabase = await createClient();
+  const [{ data: assets }, { data: records }] = await Promise.all([
+    supabase.from('assets').select('id,tag,description').is('archived_at', null).order('tag').limit(200),
+    supabase.from('inspection_records').select('id,result,inspected_at,findings,assets(tag,description)').order('inspected_at', { ascending: false }).limit(50),
+  ]);
+  return <section className="space-y-6"><header><p className="text-sm font-medium text-industrial-700">Asset assurance</p><h1 className="mt-1 text-3xl font-semibold">Inspections</h1><p className="mt-2 text-slate-600">Record inspection outcomes and findings against registered assets.</p></header>
+    {searchParams.saved && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">Inspection saved.</p>}{searchParams.error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Could not save the inspection. Check required fields and database permissions.</p>}
+    <form action={createInspectionRecord} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 md:grid-cols-2"><h2 className="text-lg font-semibold md:col-span-2">Record inspection</h2><label className="grid gap-1 text-sm">Asset<select name="asset_id" required className="rounded-lg border p-2"><option value="">Select asset</option>{assets?.map((a) => <option key={a.id} value={a.id}>{a.tag} — {a.description}</option>)}</select></label><label className="grid gap-1 text-sm">Result<select name="result" className="rounded-lg border p-2"><option value="passed">Passed</option><option value="failed">Failed</option><option value="follow_up">Follow-up required</option></select></label><label className="grid gap-1 text-sm">Inspection date<input name="inspected_at" type="datetime-local" className="rounded-lg border p-2" /></label><label className="grid gap-1 text-sm md:col-span-2">Findings<textarea name="findings" rows={3} className="rounded-lg border p-2" /></label><button className="w-fit rounded-lg bg-industrial-700 px-4 py-2 font-medium text-white">Save inspection</button></form>
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><h2 className="p-5 text-lg font-semibold">Recent inspections</h2><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-3">Date</th><th className="p-3">Asset</th><th className="p-3">Result</th><th className="p-3">Findings</th></tr></thead><tbody>{records?.map((r: any) => <tr key={r.id} className="border-t"><td className="p-3">{new Date(r.inspected_at).toLocaleDateString()}</td><td className="p-3">{r.assets?.tag ?? 'Asset'}</td><td className="p-3">{r.result.replace('_', ' ')}</td><td className="p-3">{r.findings || '—'}</td></tr>)}</tbody></table>{!records?.length && <p className="p-5 text-sm text-slate-500">No inspections recorded yet.</p>}</div>
+  </section>;
+}
